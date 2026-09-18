@@ -1,13 +1,18 @@
 package com.kairos.tvmaze.service;
 
 import com.kairos.tvmaze.client.TvmazeClient;
+import com.kairos.tvmaze.model.CacheShow;
 import com.kairos.tvmaze.model.SearchShowDTO;
+import com.kairos.tvmaze.repository.CacheShowRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
@@ -17,6 +22,9 @@ public class TvmazeService {
     public TvmazeService(TvmazeClient tvmazeClient) {
         this.tvmazeClient = tvmazeClient;
     }
+
+    @Autowired
+    private CacheShowRepository cachedShowRepository;
 
     public List<SearchShowDTO> searchShows(String query) {
         JsonNode responseNode = tvmazeClient.searchShows(query);
@@ -58,8 +66,17 @@ public class TvmazeService {
     }
 
     public Map<String, Object> getShowById(Long showId) {
+        Optional<CacheShow> cached = cachedShowRepository.findById(showId);
+        if (cached.isPresent()) {
+            return cached.get().getData();
+        }
+
         JsonNode showNode = tvmazeClient.get_ShowById(showId);
         com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-        return mapper.convertValue(showNode, Map.class);
+        Map<String, Object> showData = mapper.convertValue(showNode, Map.class);
+
+        cachedShowRepository.save(new CacheShow(showId, showData));
+
+        return showData;
     }
 }
