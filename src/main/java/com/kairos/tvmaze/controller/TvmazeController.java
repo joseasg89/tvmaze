@@ -2,10 +2,7 @@ package com.kairos.tvmaze.controller;
 
 import com.kairos.tvmaze.model.SearchShowDTO;
 import com.kairos.tvmaze.service.TvmazeService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -21,5 +18,10 @@ public class TvmazeController {
     @GetMapping("/search")
     public List<SearchShowDTO> search(@RequestParam("search_query") String query) {
         return tvmazeService.searchShows(query);
+    }
+
+    @GetMapping("/shows/{show_id}")
+    public Object getShow(@PathVariable("show_id") Long showId) {
+        return tvmazeService.getShowById(showId);
     }
 }

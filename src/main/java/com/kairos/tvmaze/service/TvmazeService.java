@@ -3,10 +3,12 @@ package com.kairos.tvmaze.service;
 import com.kairos.tvmaze.client.TvmazeClient;
 import com.kairos.tvmaze.model.SearchShowDTO;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class TvmazeService {
@@ -55,4 +57,9 @@ public class TvmazeService {
         return dto;
     }
 
+    public Map<String, Object> getShowById(Long showId) {
+        JsonNode showNode = tvmazeClient.get_ShowById(showId);
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        return mapper.convertValue(showNode, Map.class);
+    }
 }
