@@ -2,8 +2,11 @@ package com.kairos.tvmaze.service;
 
 import com.kairos.tvmaze.client.TvmazeClient;
 import com.kairos.tvmaze.model.CacheShow;
+import com.kairos.tvmaze.model.CommentRating;
+import com.kairos.tvmaze.model.CommentRatingDTO;
 import com.kairos.tvmaze.model.SearchShowDTO;
 import com.kairos.tvmaze.repository.CacheShowRepository;
+import com.kairos.tvmaze.repository.CommentRatingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -18,6 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Service
 public class TvmazeService {
     private final TvmazeClient tvmazeClient;
+    @Autowired
+    private CommentRatingRepository commentRatingRepository;
 
     public TvmazeService(TvmazeClient tvmazeClient) {
         this.tvmazeClient = tvmazeClient;
@@ -34,6 +39,20 @@ public class TvmazeService {
             for (JsonNode item : responseNode) {
                 JsonNode showNode = item.get("show");
                 SearchShowDTO dto = parseShowNode(showNode);
+
+                if (dto.getId() != null) {
+                    List<CommentRating> comments = commentRatingRepository.findByShowId(dto.getId());
+                    List<CommentRatingDTO> commentDTOs = comments.stream().map(c -> {
+                        CommentRatingDTO crdto = new CommentRatingDTO();
+                        crdto.setShow_id(dto.getId());
+                        crdto.setComment(c.getComment());
+                        crdto.setRating(c.getRating());
+                        return crdto;
+                    }).toList();
+
+                    dto.setComments(commentDTOs);
+                }
+
                 results.add(dto);
             }
         }
