@@ -11,10 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.JsonNode;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -85,17 +82,31 @@ public class TvmazeService {
     }
 
     public Map<String, Object> getShowById(Long showId) {
+        Map<String, Object> showData;
+
         Optional<CacheShow> cached = cachedShowRepository.findById(showId);
         if (cached.isPresent()) {
-            return cached.get().getData();
+            showData = cached.get().getData();
+        }
+        else {
+            JsonNode showNode = tvmazeClient.get_ShowById(showId);
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            showData = mapper.convertValue(showNode, Map.class);
+            cachedShowRepository.save(new CacheShow(showId, showData));
         }
 
-        JsonNode showNode = tvmazeClient.get_ShowById(showId);
-        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-        Map<String, Object> showData = mapper.convertValue(showNode, Map.class);
+        Map<String, Object> mutableShowData = new HashMap<>(showData);
 
-        cachedShowRepository.save(new CacheShow(showId, showData));
+        List<CommentRating> commentsRatings = commentRatingRepository.findByShowId(showId);
+        List<Map<String, Object>> commentList = commentsRatings.stream().map(c -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("comment", c.getComment());
+            map.put("rating", c.getRating());
+            return map;
+        }).toList();
 
-        return showData;
+        mutableShowData.put("comments", commentList);
+
+        return mutableShowData;
     }
 }
